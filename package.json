@@ -1,0 +1,9 @@
+{
+    "name": "com.omicronperson.omicrondamages",
+    "displayName": "Omicron Damages",
+    "version": "1.0.0",
+    "description": "",
+    "unity": "2022.3",
+    "dependencies": {},
+    "keywords": []
+}
