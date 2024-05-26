@@ -1,9 +1,13 @@
 {
     "name": "com.omicronperson.omicrondamages",
     "displayName": "Omicron Damages",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "",
     "unity": "2022.3",
     "dependencies": {},
-    "keywords": []
+    "keywords": [],
+	  "author": {
+    "name": "OmicronPerson",
+    "url": "https://github.com/Anton-Notna"
+  }
 }

@@ -6,6 +6,23 @@ namespace OmicronDamages
 {
     public abstract class SphereScanDamager<TData> : MonoBehaviour
     {
+        public struct CastReport
+        {
+            public int SuccessDamages;
+            public int FailDamages;
+            public int NonDamageableCollisions;
+
+            public CastReport Add(CastReport castReport)
+            {
+                return new CastReport()
+                {
+                    SuccessDamages = this.SuccessDamages + castReport.SuccessDamages,
+                    FailDamages = this.FailDamages + castReport.FailDamages,
+                    NonDamageableCollisions = this.NonDamageableCollisions + castReport.NonDamageableCollisions,
+                };
+            }
+        }
+
         [Serializable]
         private struct Point
         {
@@ -29,7 +46,7 @@ namespace OmicronDamages
         [SerializeField]
         private Color _gizmosColor = Color.red;
 
-        private readonly HashSet<IDamageable<TData>> _damaged = new HashSet<IDamageable<TData>>();
+        private readonly HashSet<Collider> _damaged = new HashSet<Collider>();
         private Collider[] _hits;
         private float _activeTime = float.MinValue;
         private IDamageSource _source;
@@ -37,6 +54,8 @@ namespace OmicronDamages
 
         private Vector3 _previousPosition;
         private Quaternion _previousRotation;
+
+        public CastReport Report { get; private set; }
 
         private bool Active => Time.time <= _activeTime;
 
@@ -50,6 +69,7 @@ namespace OmicronDamages
             _activeTime = activeDuration + Time.time;
             _source = source;
             _data = data;
+            Report = new CastReport();
         }
 
         public void Deactivate()
@@ -68,13 +88,14 @@ namespace OmicronDamages
             if (Active == false)
                 return;
 
-            Cast();
+            Report = Report.Add(Cast());
             CollectTransformData();
         }
 
-        private bool Cast()
+        private CastReport Cast()
         {
-            bool collision = false;
+            CastReport report = new CastReport();
+
             for (int i = 0; i < _points.Length; i++)
             {
                 var point = _points[i];
@@ -85,28 +106,33 @@ namespace OmicronDamages
                 if (_gizmos)
                     Debug.DrawLine(previous, current, _gizmosColor, 0.3f);
               
-                if (count > 0)
-                    collision = true;
-                else
+                if (count == 0)
                     continue;
 
                 for (int c = 0; c < count; c++)
-                    Process(_hits[c], previous);
+                    report = report.Add(Process(_hits[c], previous));
             }
 
-            return collision;
+            return report;
         }
 
-        private void Process(Collider collider, Vector3 point)
+        private CastReport Process(Collider collider, Vector3 point)
         {
+            CastReport report = new CastReport();
+
             if (collider == null)
-                return;
+                return report;
+
+            if (_damaged.Contains(collider))
+                return report;
+
+            _damaged.Add(collider);
 
             if (collider.TryGetComponent(out IDamageable<TData> damageable) == false)
-                return;
-
-            if (_damaged.Contains(damageable))
-                return;
+            {
+                report.NonDamageableCollisions += 1;
+                return report;
+            }
 
             Vector3 closest = collider.ClosestPoint(point);
             Vector3 normal = (point - closest).normalized;
@@ -117,8 +143,12 @@ namespace OmicronDamages
                 Hit = new Ray(closest, normal),
             };
 
-            damageable.TakeDamage(damage, _data);
-            _damaged.Add(damageable);
+            if (damageable.TakeDamage(damage, _data))
+                report.SuccessDamages += 1;
+            else
+                report.FailDamages += 1;
+
+            return report;
         }
 
         private void OnDrawGizmos()
