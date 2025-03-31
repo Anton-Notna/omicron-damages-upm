@@ -23,6 +23,8 @@ namespace OmicronDamages
             }
         }
 
+        public delegate void DamagedCallback(IDamageable<TData> damageable, Collider damageableCollider, DamagePoint point, TData data);
+
         [Serializable]
         private struct Point
         {
@@ -56,6 +58,8 @@ namespace OmicronDamages
         private Quaternion _previousRotation;
 
         public CastReport Report { get; private set; }
+
+        public event DamagedCallback Damaged = delegate { };
 
         private bool Active => Time.time <= _activeTime;
 
@@ -147,6 +151,8 @@ namespace OmicronDamages
                 report.SuccessDamages += 1;
             else
                 report.FailDamages += 1;
+
+            Damaged.Invoke(damageable, collider, damage, _data);
 
             return report;
         }
