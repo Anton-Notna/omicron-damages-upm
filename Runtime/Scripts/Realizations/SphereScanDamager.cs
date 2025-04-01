@@ -34,6 +34,13 @@ namespace OmicronDamages
             public Vector3 LocalOffset;
         }
 
+        private enum UpdateCase
+        {
+            Update = 0,
+            LateUpdate = 1,
+            OnAnimatorMove = 2,
+        }
+
         [SerializeField]
         private int _hitsPerPointLimit = 10;
         [SerializeField]
@@ -43,7 +50,7 @@ namespace OmicronDamages
         [SerializeField]
         private Point[] _points;
         [SerializeField]
-        private bool _onAnimatorMove;
+        private UpdateCase _updateCase;
         [Space]
         [SerializeField]
         private bool _gizmos;
@@ -95,10 +102,8 @@ namespace OmicronDamages
             if (Active == false)
                 return;
 
-            if (_onAnimatorMove)
-                return;
-
-            Process();
+            if (_updateCase == UpdateCase.Update)
+                Process();
         }
 
         private void OnAnimatorMove()
@@ -106,10 +111,17 @@ namespace OmicronDamages
             if (Active == false)
                 return;
 
-            if (_onAnimatorMove == false)
+            if (_updateCase == UpdateCase.OnAnimatorMove)
+                Process();
+        }
+
+        private void LateUpdate()
+        {
+            if (Active == false)
                 return;
 
-            Process();
+            if (_updateCase == UpdateCase.LateUpdate)
+                Process();
         }
 
         private void Process()
