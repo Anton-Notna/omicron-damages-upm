@@ -42,6 +42,8 @@ namespace OmicronDamages
         private QueryTriggerInteraction _triggerInteraction = QueryTriggerInteraction.Ignore;
         [SerializeField]
         private Point[] _points;
+        [SerializeField]
+        private bool _onAnimatorMove;
         [Space]
         [SerializeField]
         private bool _gizmos;
@@ -54,6 +56,7 @@ namespace OmicronDamages
         private IDamageSource _source;
         private TData _data;
 
+        private bool _firstIteration;
         private Vector3 _previousPosition;
         private Quaternion _previousRotation;
 
@@ -69,11 +72,11 @@ namespace OmicronDamages
                 _hits = new Collider[_hitsPerPointLimit];
 
             _damaged.Clear();
-            CollectTransformData();
             _activeTime = activeDuration + Time.time;
             _source = source;
             _data = data;
             Report = new CastReport();
+            _firstIteration = true;
         }
 
         public void Deactivate()
@@ -91,6 +94,31 @@ namespace OmicronDamages
         {
             if (Active == false)
                 return;
+
+            if (_onAnimatorMove)
+                return;
+
+            Process();
+        }
+
+        private void OnAnimatorMove()
+        {
+            if (Active == false)
+                return;
+
+            if (_onAnimatorMove == false)
+                return;
+
+            Process();
+        }
+
+        private void Process()
+        {
+            if (_firstIteration)
+            {
+                CollectTransformData();
+                _firstIteration = false;
+            }
 
             Report = Report.Add(Cast());
             CollectTransformData();
